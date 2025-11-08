@@ -1,11 +1,13 @@
+import os
+import tempfile
+from PIL import Image
 from django.contrib.auth import get_user_model
 from rest_framework import status
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APITestCase
 from django.test import TestCase
 from rest_framework.reverse import reverse
 
 from cinema.models import Movie, Genre, Actor
-from cinema.serializers import MovieSerializer
 
 MOVIES_URL = reverse("cinema:movie-list")
 
@@ -26,6 +28,13 @@ def sample_movie(**params):
     defaults.update(params)
 
     return Movie.objects.create(**defaults)
+
+def image_upload_url(movie_id):
+    return reverse("cinema:movie-upload-image", args=[movie_id])
+
+
+def detail_url(movie_id):
+    return reverse("cinema:movie-detail", args=[movie_id])
 
 
 class UnauthenticatedMovieApiTest(TestCase):
@@ -101,3 +110,70 @@ class AuthenticatedMovieApiTest(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
         self.assertEqual(res.data[0]["title"], movie1.title)
+
+
+class AdminMovieApiTests(APITestCase):
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser(
+            email="admin@example.com", password="adminpass123"
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.admin)
+
+    def test_admin_can_create_movie(self):
+        genre1 = sample_genre(name="Comedy")
+        actor1 = sample_actor(first_name="Jim", last_name="Carrey")
+
+        payload = {
+            "title": "The Mask",
+            "description": "Funny movie",
+            "duration": 101,
+            "genres": [genre1.id],
+            "actors": [actor1.id],
+        }
+
+        res = self.client.post(MOVIES_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        movie = Movie.objects.get(id=res.data["id"])
+        self.assertEqual(movie.title, payload["title"])
+        self.assertIn(genre1, movie.genres.all())
+        self.assertIn(actor1, movie.actors.all())
+
+    def test_non_admin_cannot_create_movie(self):
+        user = get_user_model().objects.create_user(
+            email="regular@example.com", password="userpass123"
+        )
+        client = APIClient()
+        client.force_authenticate(user)
+
+        payload = {"title": "Should Fail", "description": "Nope", "duration": 100}
+        res = client.post(MOVIES_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_upload_image_to_movie(self):
+        movie = sample_movie()
+        url = image_upload_url(movie.id)
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as image_file:
+            img = Image.new("RGB", (10, 10))
+            img.save(image_file, format="JPEG")
+            image_file.seek(0)
+
+            res = self.client.post(url, {"image": image_file}, format="multipart")
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        movie.refresh_from_db()
+        self.assertTrue(os.path.exists(movie.image.path))
+
+        # Clean up created image file
+        movie.image.delete(save=False)
+
+    def test_upload_image_invalid(self):
+        """Test uploading invalid image returns error"""
+        movie = sample_movie()
+        url = image_upload_url(movie.id)
+        res = self.client.post(url, {"image": "notanimage"}, format="multipart")
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)

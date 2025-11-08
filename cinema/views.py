@@ -36,7 +36,6 @@ class GenreViewSet(
 ):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
 
@@ -47,7 +46,6 @@ class ActorViewSet(
 ):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
 
@@ -58,7 +56,6 @@ class CinemaHallViewSet(
 ):
     queryset = CinemaHall.objects.all()
     serializer_class = CinemaHallSerializer
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
 
@@ -70,7 +67,6 @@ class MovieViewSet(
 ):
     queryset = Movie.objects.prefetch_related("genres", "actors")
     serializer_class = MovieSerializer
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     @staticmethod
@@ -132,18 +128,18 @@ class MovieViewSet(
         parameters=[
             OpenApiParameter(
                 "title",
-                type={"type": "array", "items": {"type": "number"}},
-                description="filter by title id (ex. ?title=2,3)",
+                type={"type": "string"},
+                description="Filter by movie title (ex. ?title=2,3)",
             ),
             OpenApiParameter(
                 "genres",
-                type={"type": "array", "items": {"type": "number"}},
-                description="filter by genres id (ex. ?genres=2,3)",
+                type={"type": "array", "items": {"type": "integer"}},
+                description="Filter by genre IDs (ex. ?genres=2,3)",
             ),
             OpenApiParameter(
                 "actors ",
-                type={"type": "array", "items": {"type": "number"}},
-                description="filter by actors  id (ex. ?actors =2,3)",
+                type={"type": "array", "items": {"type": "integer"}},
+                description="Filter by actor IDs (ex. ?actors =2,3)",
             )
         ]
     )
@@ -164,7 +160,6 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
         )
     )
     serializer_class = MovieSessionSerializer
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     def get_queryset(self):
@@ -196,12 +191,12 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
             OpenApiParameter(
                 "date",
                 type={"type": "array", "items": {"type": "datetime"}},
-                description="filter by date id (ex. ?date=2024-10-10)",
+                description="Filter by date (ex. ?date=2024-10-10)",
             ),
             OpenApiParameter(
                 "movie ",
-                type={"type": "array", "items": {"type": "number"}},
-                description="filter by movie  id (ex. ?movie =2,3)",
+                type={"type": "string"},
+                description="Filter by movie id (ex. ?movie =2,3)",
             )
         ]
     )
@@ -225,7 +220,6 @@ class OrderViewSet(
     )
     serializer_class = OrderSerializer
     pagination_class = OrderPagination
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
