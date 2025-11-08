@@ -3,7 +3,6 @@ from datetime import datetime
 from django.db.models import F, Count
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, mixins, status
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -129,7 +128,7 @@ class MovieViewSet(
             OpenApiParameter(
                 "title",
                 type={"type": "string"},
-                description="Filter by movie title (ex. ?title=2,3)",
+                description="Filter by movie title (ex. ??title=matrix)",
             ),
             OpenApiParameter(
                 "genres",
@@ -137,7 +136,7 @@ class MovieViewSet(
                 description="Filter by genre IDs (ex. ?genres=2,3)",
             ),
             OpenApiParameter(
-                "actors ",
+                "actors",
                 type={"type": "array", "items": {"type": "integer"}},
                 description="Filter by actor IDs (ex. ?actors =2,3)",
             )
@@ -190,13 +189,13 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
         parameters=[
             OpenApiParameter(
                 "date",
-                type={"type": "array", "items": {"type": "datetime"}},
+                type={"type": "string", "format": "date"},
                 description="Filter by date (ex. ?date=2024-10-10)",
             ),
             OpenApiParameter(
-                "movie ",
+                "movie",
                 type={"type": "string"},
-                description="Filter by movie id (ex. ?movie =2,3)",
+                description="Filter by movie id (ex. ?movie=2)",
             )
         ]
     )

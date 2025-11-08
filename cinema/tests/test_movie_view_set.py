@@ -111,6 +111,21 @@ class AuthenticatedMovieApiTest(TestCase):
         self.assertEqual(len(res.data), 1)
         self.assertEqual(res.data[0]["title"], movie1.title)
 
+    def test_retrieve_movie_detail(self):
+        genre = sample_genre()
+        actor = sample_actor()
+        movie = sample_movie(title="Titanic")
+        movie.genres.add(genre)
+        movie.actors.add(actor)
+
+        url = detail_url(movie.id)
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["title"], movie.title)
+        self.assertEqual(res.data["genres"][0]["name"], genre.name)
+        self.assertEqual(res.data["actors"][0]["full_name"], actor.full_name)
+
 
 class AdminMovieApiTests(APITestCase):
 
